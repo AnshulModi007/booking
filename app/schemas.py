@@ -59,3 +59,19 @@ class FacilityResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ClosureCreate(BaseModel):
+    facility_id: int
+    start_time: datetime
+    end_time: datetime
+    reason: str
+
+class ClosureResponse(BaseModel):
+    id: int
+    facility_id: int
+    start_time: datetime
+    end_time: datetime
+    reason:str
+
+    class Config:
+        from_attributes = True

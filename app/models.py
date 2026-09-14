@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import TIMESTAMP, Boolean, Column, Integer, String, ForeignKey
+from sqlalchemy import TIMESTAMP, Boolean, Column, Integer, String, ForeignKey, func
 from sqlalchemy.orm import relationship
 
 class User(Base):
@@ -11,7 +11,7 @@ class User(Base):
     full_name= Column(String, nullable=False)
     roll_number= Column(String, unique=True, index=True, nullable=False)
     role= Column(String, nullable=False, default="student")
-    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")
+    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     bookings = relationship("Booking", back_populates="user")
 
 
@@ -52,8 +52,9 @@ class Booking(Base):
     facility_id= Column(Integer, ForeignKey("Facility.id"), nullable=False)
     start_time= Column(TIMESTAMP(timezone=True), nullable=False)
     end_time= Column(TIMESTAMP(timezone=True), nullable=False)
-    status= Column(String, nullable=False, default="active")
-    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")
+    status= Column(String, nullable=False, default="confirmed")
+    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    cancelled_at = Column(TIMESTAMP(timezone=True) ,nullable=True)
 
     user= relationship("User", back_populates="bookings")
     facility= relationship("Facility", back_populates="bookings")
@@ -66,4 +67,4 @@ class RefreshToken(Base):
     user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
     token = Column(String, unique=True, index=True, nullable=False)
     revoked = Column(Boolean, nullable=False, default=False)
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")   
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())   
