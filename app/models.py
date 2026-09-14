@@ -11,7 +11,8 @@ class User(Base):
     full_name= Column(String, nullable=False)
     roll_number= Column(String, unique=True, index=True, nullable=False)
     role= Column(String, nullable=False, default="student")
-    created_at= Column(TIMESTAMP(timezone=True), nullable=False)
+    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")
+    bookings = relationship("Booking", back_populates="user")
 
 
 class Facility(Base):
@@ -28,6 +29,8 @@ class Facility(Base):
     max_active_bookings_per_user= Column(Integer, nullable=False)
     min_cancellation_notice_hours= Column(Integer, nullable=False)
     is_active= Column(Boolean, nullable=False, default=True)
+    closures = relationship("Closure", back_populates="facility")   # add
+    bookings = relationship("Booking", back_populates="facility")
 
 class Closure(Base):
     __tablename__ = "Closure"
@@ -50,7 +53,17 @@ class Booking(Base):
     start_time= Column(TIMESTAMP(timezone=True), nullable=False)
     end_time= Column(TIMESTAMP(timezone=True), nullable=False)
     status= Column(String, nullable=False, default="active")
-    created_at= Column(TIMESTAMP(timezone=True), nullable=False)
+    created_at= Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")
 
     user= relationship("User", back_populates="bookings")
-    facility= relationship("Facility", back_populates="bookings")   
+    facility= relationship("Facility", back_populates="bookings")
+
+
+class RefreshToken(Base):
+    __tablename__ = "RefreshToken"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
+    token = Column(String, unique=True, index=True, nullable=False)
+    revoked = Column(Boolean, nullable=False, default=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default="now()")   
