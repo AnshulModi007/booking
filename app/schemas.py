@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from datetime import date as data_type
 
 class Token(BaseModel):
     access_token: str
@@ -75,3 +76,15 @@ class ClosureResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SlotOut(BaseModel):
+    start: datetime
+    end: datetime
+    available: bool
+    reason: str | None=None
+
+class AvailiblityResponse(BaseModel):
+    facility_id: int
+    date: data_type
+    slots: list[SlotOut]
