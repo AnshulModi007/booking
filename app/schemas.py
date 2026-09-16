@@ -78,6 +78,25 @@ class ClosureResponse(BaseModel):
         from_attributes = True
 
 
+class BookingCreate(BaseModel):
+    facility_id: int
+    start_time: datetime
+    end_time: datetime
+
+class BookingResponse(BaseModel):
+    id: int
+    user_id: int
+    facility_id: int
+    start_time: datetime
+    end_time: datetime
+    status: str
+    created_at: datetime
+    cancelled_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class SlotOut(BaseModel):
     start: datetime
     end: datetime

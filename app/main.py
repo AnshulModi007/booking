@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import Settings
 from . import models
 from .database import engine, get_db, sessionLocal, Base
-from .routers import user, auth, facility, closure, availiblity
+from .routers import user, auth, facility, closure, availiblity, booking
 
 app=FastAPI()
 
@@ -21,6 +21,7 @@ app.include_router(auth.router)
 app.include_router(facility.router)
 app.include_router(closure.router)
 app.include_router(availiblity.router)
+app.include_router(booking.router)
 
 @app.get("/")
 def read_root():
