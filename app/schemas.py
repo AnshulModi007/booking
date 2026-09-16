@@ -61,6 +61,18 @@ class FacilityResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class FacilityUpdate(BaseModel):
+    name: str | None = None
+    type: str | None = None
+    location: str | None = None
+    slot_duration_minutes: int | None = None
+    opens_at: datetime | None = None
+    closes_at: datetime | None = None
+    max_advance_days: int | None = None
+    max_active_bookings_per_user: int | None = None
+    min_cancellation_notice_hours: int | None = None
+    is_active: bool | None = None
+
 class ClosureCreate(BaseModel):
     facility_id: int
     start_time: datetime
@@ -107,3 +119,13 @@ class AvailiblityResponse(BaseModel):
     facility_id: int
     date: data_type
     slots: list[SlotOut]
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+
+class ChatResponse(BaseModel):
+    reply: str

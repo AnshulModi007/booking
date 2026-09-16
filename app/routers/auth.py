@@ -58,4 +58,8 @@ def logout(refresh_token: schemas.RefreshTokenCreate, db: Session = Depends(data
     db_refresh_token.revoked = True
     db.commit()
 
+@router.get("/auth/me", response_model=schemas.UserResponse)
+def get_me(current_user: models.User = Depends(oauth2.get_current_user)):
+    return current_user
+
 
