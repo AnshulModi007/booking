@@ -1,0 +1,44 @@
+databases:
+  - name: booking-db
+    databaseName: booking
+    user: booking
+    plan: free
+
+services:
+  - type: web
+    name: booking-api
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: DB_HOST
+        fromDatabase:
+          name: booking-db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: booking-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: booking-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: booking-db
+          property: password
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: INSTITUTE_EMAIL_DOMAIN
+        value: iitdh.ac.in
+      - key: OLLAMA_HOST
+        value: http://localhost:11434
+      - key: OLLAMA_MODEL
+        value: llama3.2
