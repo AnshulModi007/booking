@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1b2d">
+<title>Admin</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>Admin</h1>
+  <div id="error" class="error" style="display:none"></div>
+  <div id="not-admin" style="display:none" class="card">You must be an admin to view this page.</div>
+
+  <div id="admin-content" style="display:none">
+    <h2>Add facility</h2>
+    <form id="facility-form">
+      <div class="field"><label>Name</label><input id="f-name" required></div>
+      <div class="field"><label>Type</label>
+        <select id="f-type">
+          <option value="court">court</option>
+          <option value="room">room</option>
+          <option value="equipment">equipment</option>
+        </select>
+      </div>
+      <div class="field"><label>Location</label><input id="f-location" required></div>
+      <div class="field"><label>Slot duration (minutes)</label><input id="f-duration" type="number" value="60" required></div>
+      <div class="field"><label>Opens at (UTC, e.g. 06:00)</label><input id="f-opens" type="time" value="06:00" required></div>
+      <div class="field"><label>Closes at (UTC)</label><input id="f-closes" type="time" value="22:00" required></div>
+      <div class="field"><label>Max advance days</label><input id="f-advance" type="number" value="7" required></div>
+      <div class="field"><label>Max active bookings/user</label><input id="f-quota" type="number" value="2" required></div>
+      <div class="field"><label>Min cancellation notice (hours)</label><input id="f-notice" type="number" value="1" required></div>
+      <button class="btn" type="submit">Create facility</button>
+    </form>
+
+    <h2>Add closure</h2>
+    <form id="closure-form">
+      <div class="field"><label>Facility ID</label><input id="c-facility" type="number" required></div>
+      <div class="field"><label>Start (ISO, e.g. 2026-09-20T06:00:00Z)</label><input id="c-start" required></div>
+      <div class="field"><label>End (ISO)</label><input id="c-end" required></div>
+      <div class="field"><label>Reason</label><input id="c-reason" required></div>
+      <button class="btn secondary" type="submit">Create closure</button>
+    </form>
+    <div id="closure-conflict" style="display:none" class="card"></div>
+
+    <h2>View / delete closures</h2>
+    <div class="field row" style="align-items:flex-end">
+      <div style="flex:1"><label>Facility ID</label><input id="view-facility-id" type="number"></div>
+      <button class="btn secondary" style="width:auto;padding:12px 16px" onclick="loadClosures()">Load</button>
+    </div>
+    <div id="closures-list"></div>
+
+    <h2>All bookings</h2>
+    <div id="all-bookings"></div>
+  </div>
+</main>
+<div id="nav"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("nav").innerHTML = renderBottomNav("admin");
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() { document.getElementById("error").style.display = "none"; }
+
+  let pendingClosureBody = null;
+
+  async function checkAdmin() {
+    const me = await api("/auth/me");
+    if (me.role !== "admin") {
+      document.getElementById("not-admin").style.display = "block";
+      return false;
+    }
+    document.getElementById("admin-content").style.display = "block";
+    return true;
+  }
+
+  document.getElementById("facility-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError();
+    try {
+      const date = "2000-01-01";
+      await api("/facilities/", {
+        method: "POST",
+        body: {
+          name: document.getElementById("f-name").value,
+          type: document.getElementById("f-type").value,
+          location: document.getElementById("f-location").value,
+          slot_duration_minutes: Number(document.getElementById("f-duration").value),
+          opens_at: `${date}T${document.getElementById("f-opens").value}:00Z`,
+          closes_at: `${date}T${document.getElementById("f-closes").value}:00Z`,
+          max_advance_days: Number(document.getElementById("f-advance").value),
+          max_active_bookings_per_user: Number(document.getElementById("f-quota").value),
+          min_cancellation_notice_hours: Number(document.getElementById("f-notice").value),
+          is_active: true,
+        },
+      });
+      alert("Facility created");
+      e.target.reset();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  document.getElementById("closure-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError();
+    document.getElementById("closure-conflict").style.display = "none";
+    const body = {
+      facility_id: Number(document.getElementById("c-facility").value),
+      start_time: document.getElementById("c-start").value,
+      end_time: document.getElementById("c-end").value,
+      reason: document.getElementById("c-reason").value,
+    };
+    await createClosure(body, false);
+  });
+
+  async function createClosure(body, force) {
+    try {
+      await api("/closures", { method: "POST", params: force ? { force: "true" } : {}, body });
+      alert(force ? "Bookings cancelled and closure created" : "Closure created");
+      document.getElementById("closure-form").reset();
+      document.getElementById("closure-conflict").style.display = "none";
+      document.getElementById("view-facility-id").value = body.facility_id;
+      loadClosures();
+      loadAllBookings();
+    } catch (err) {
+      if (err.status === 409 && err.detail && err.detail.conflicting_bookings) {
+        pendingClosureBody = body;
+        const el = document.getElementById("closure-conflict");
+        el.style.display = "block";
+        el.innerHTML = `
+          <p>${err.detail.message}</p>
+          <p class="muted">${err.detail.conflicting_bookings.length} booking(s) will be cancelled.</p>
+          <button class="btn danger" onclick="forceCreateClosure()">Cancel bookings and close anyway</button>
+        `;
+      } else {
+        showError(err.message);
+      }
+    }
+  }
+
+  function forceCreateClosure() {
+    if (pendingClosureBody) createClosure(pendingClosureBody, true);
+  }
+
+  async function loadClosures() {
+    hideError();
+    const facilityId = document.getElementById("view-facility-id").value;
+    const el = document.getElementById("closures-list");
+    if (!facilityId) {
+      el.innerHTML = '<p class="muted">Enter a facility ID above.</p>';
+      return;
+    }
+    try {
+      const closures = await api(`/facilities/${facilityId}/closures`);
+      if (closures.length === 0) {
+        el.innerHTML = '<p class="muted">No upcoming closures for this facility.</p>';
+        return;
+      }
+      el.innerHTML = closures.map(c => `
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="card-title">${c.reason}</div>
+              <div class="card-sub">${fmtDateTime(c.start_time)} — ${fmtDateTime(c.end_time)}</div>
+            </div>
+            <button class="btn danger" style="width:auto;padding:10px 16px" onclick="deleteClosure(${c.id})">Delete</button>
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  async function deleteClosure(id) {
+    hideError();
+    try {
+      await api(`/closures/${id}`, { method: "DELETE" });
+      loadClosures();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  async function loadAllBookings() {
+    const el = document.getElementById("all-bookings");
+    try {
+      const bookings = await api("/bookings/");
+      if (bookings.length === 0) {
+        el.innerHTML = '<p class="muted">No bookings.</p>';
+        return;
+      }
+      bookings.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      el.innerHTML = bookings.map(b => `
+        <div class="card">
+          <div class="card-title">Facility #${b.facility_id} · User #${b.user_id}</div>
+          <div class="card-sub">${fmtDateTime(b.start_time)}</div>
+          <div class="card-sub status-${b.status}">${b.status}</div>
+        </div>
+      `).join("");
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  (async () => {
+    try {
+      if (await checkAdmin()) loadAllBookings();
+    } catch (err) {
+      showError(err.message);
+    }
+  })();
+</script>
+</body>
+</html>

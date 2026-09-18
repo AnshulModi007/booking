@@ -32,5 +32,5 @@ def upgrade() -> None:
     ''')
 
 def downgrade():
-    op.drop_constraint("no_overlapping_bookings", "Booking", type_="exclude")
+    op.execute('ALTER TABLE "Booking" DROP CONSTRAINT no_overlapping_bookings')
     op.drop_constraint("end_after_start", "Booking", type_="check") 

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1b2d">
+<title>Facilities</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>Facilities</h1>
+  <div id="error" class="error" style="display:none"></div>
+  <div id="list"></div>
+</main>
+<div id="nav"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("nav").innerHTML = renderBottomNav("facilities");
+
+  async function load() {
+    try {
+      const facilities = await api("/facilities/");
+      const list = document.getElementById("list");
+      if (facilities.length === 0) {
+        list.innerHTML = '<p class="muted">No facilities available right now.</p>';
+        return;
+      }
+      list.innerHTML = facilities.map(f => `
+        <a class="card card-tap type-${f.type}" href="book.html?facility_id=${f.id}">
+          <div class="card-title">${f.name}</div>
+          <div class="card-sub">${f.location}</div>
+          <div class="card-sub">${f.slot_duration_minutes}-min slots</div>
+          <span class="card-tag">${f.type}</span>
+        </a>
+      `).join("");
+    } catch (err) {
+      const el = document.getElementById("error");
+      el.textContent = err.message;
+      el.style.display = "block";
+    }
+  }
+  load();
+
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) load();
+  });
+</script>
+</body>
+</html>

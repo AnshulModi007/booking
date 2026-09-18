@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1b2d">
+<title>My Bookings</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>My Bookings</h1>
+  <div id="error" class="error" style="display:none"></div>
+  <div id="list"></div>
+</main>
+<div id="nav"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("nav").innerHTML = renderBottomNav("bookings");
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() {
+    document.getElementById("error").style.display = "none";
+  }
+
+  async function load() {
+    hideError();
+    const list = document.getElementById("list");
+    try {
+      const bookings = await api("/bookings/me");
+      if (bookings.length === 0) {
+        list.innerHTML = '<p class="muted">No bookings yet.</p>';
+        return;
+      }
+      bookings.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+      list.innerHTML = bookings.map(b => `
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="card-title">${fmtDateTime(b.start_time)}</div>
+              <div class="card-sub status-${b.status}">${b.status}</div>
+            </div>
+            ${b.status === "confirmed" ? `<button class="btn danger" style="width:auto;padding:10px 16px" onclick="cancelBooking(${b.id})">Cancel</button>` : ""}
+          </div>
+        </div>
+      `).join("");
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  async function cancelBooking(id) {
+    hideError();
+    try {
+      await api(`/bookings/${id}`, { method: "DELETE" });
+      load();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  load();
+
+  // if the browser restores this page from bfcache (e.g. hitting Back),
+  // the script above doesn't re-run — force a refresh so stale data
+  // (like a booking made elsewhere) doesn't linger.
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) load();
+  });
+</script>
+</body>
+</html>

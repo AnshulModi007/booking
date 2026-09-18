@@ -14,15 +14,21 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     existing = db.query(models.User).filter(models.User.email == user.email).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists")
+    existing_roll = db.query(models.User).filter(models.User.roll_number == user.roll_number).first()
+    if existing_roll:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this roll number already exists")
 
     hashed_password = utils.password_hash(user.password)
-    new_user = models.User(email=user.email, password=hashed_password, full_name=user.full_name, roll_number=user.roll_number, role=user.role)
+    # public self-registration must never grant a role the caller chooses —
+    # every new account starts as a student; promotion to admin happens
+    # out-of-band (see README/CLAUDE notes), never via this open endpoint.
+    new_user = models.User(email=user.email, password=hashed_password, full_name=user.full_name, roll_number=user.roll_number, role="student")
     db.add(new_user)
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email or roll number already exists")
     db.refresh(new_user)
     return new_user
 

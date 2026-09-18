@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1b2d">
+<title>Booking Assistant</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>Booking Assistant</h1>
+  <div id="error" class="error" style="display:none"></div>
+  <div id="messages" class="chat-messages"></div>
+</main>
+
+<div class="chat-input-bar">
+  <input type="text" id="chat-input" placeholder="Ask about facilities, availability, or book a slot..." autocomplete="off">
+  <button id="send-btn" onclick="send()">Send</button>
+</div>
+<div id="nav"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("nav").innerHTML = renderBottomNav("chat");
+
+  const CHAT_KEY = "booking_chat_messages";
+  const defaultMessages = [
+    { role: "assistant", content: "Hi! I can help you find a facility, check availability, or book a slot. What do you need?" },
+  ];
+
+  let messages = defaultMessages;
+  try {
+    const saved = sessionStorage.getItem(CHAT_KEY);
+    if (saved) messages = JSON.parse(saved);
+  } catch (e) { /* ignore — fall back to defaultMessages */ }
+
+  function saveMessages() {
+    try { sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages)); } catch (e) { /* storage unavailable, ignore */ }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() { document.getElementById("error").style.display = "none"; }
+
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function render() {
+    const el = document.getElementById("messages");
+    el.innerHTML = messages.map(m => `
+      <div class="chat-bubble ${m.role === "user" ? "user" : "assistant"}">${escapeHtml(m.content)}</div>
+    `).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function send() {
+    const input = document.getElementById("chat-input");
+    const text = input.value.trim();
+    if (!text) return;
+    hideError();
+
+    messages.push({ role: "user", content: text });
+    saveMessages();
+    input.value = "";
+    render();
+
+    const sendBtn = document.getElementById("send-btn");
+    sendBtn.disabled = true;
+    const el = document.getElementById("messages");
+    el.insertAdjacentHTML("beforeend", '<div class="chat-bubble pending" id="pending">Thinking...</div>');
+    el.scrollTop = el.scrollHeight;
+
+    try {
+      const res = await api("/assistant/chat", { method: "POST", body: { messages } });
+      messages.push({ role: "assistant", content: res.reply });
+      saveMessages();
+      render();
+    } catch (err) {
+      document.getElementById("pending")?.remove();
+      showError(err.message);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  document.getElementById("chat-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") send();
+  });
+
+  render();
+</script>
+</body>
+</html>

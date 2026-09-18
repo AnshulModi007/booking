@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import Settings
+from fastapi.staticfiles import StaticFiles
 from . import models
 from .database import engine, get_db, sessionLocal, Base
 from .routers import user, auth, facility, closure, availiblity, booking, assistant
@@ -26,8 +28,10 @@ app.include_router(assistant.router)
 
 @app.get("/")
 def read_root():
-    return {"status": "server running"}
+    return RedirectResponse(url="/login.html")
 
 @app.get("/health")
 def health():
     return {"return": "ok"}
+
+app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1b2d">
+<title>Book a slot</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1 id="facility-name">Loading...</h1>
+  <div id="error" class="error" style="display:none"></div>
+  <div class="field">
+    <label>Date</label>
+    <input type="date" id="date-input">
+  </div>
+  <h2>Schedule</h2>
+  <div id="slots" class="schedule"></div>
+</main>
+<div id="nav"></div>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("nav").innerHTML = renderBottomNav("facilities");
+
+  const params = new URLSearchParams(location.search);
+  const facilityId = params.get("facility_id");
+  if (!facilityId) location.href = "facilities.html";
+
+  const REASON_LABEL = {
+    booked: "Booked", closure: "Closed", past: "Past",
+    beyond_advance_days: "Too far ahead",
+  };
+
+  let facility = null;
+  const dateInput = document.getElementById("date-input");
+  dateInput.value = todayISO();
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function hideError() {
+    document.getElementById("error").style.display = "none";
+  }
+
+  async function loadFacility() {
+    facility = await api(`/facilities/${facilityId}`);
+    document.getElementById("facility-name").textContent = facility.name;
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + facility.max_advance_days);
+    dateInput.max = maxDate.toISOString().slice(0, 10);
+    dateInput.min = todayISO();
+  }
+
+  async function loadSlots() {
+    hideError();
+    const list = document.getElementById("slots");
+    list.innerHTML = '<p class="muted">Loading...</p>';
+    try {
+      const avail = await api(`/facilities/${facilityId}/availiblity`, {
+        params: { date: dateInput.value },
+      });
+      if (avail.slots.length === 0) {
+        list.innerHTML = '<p class="muted">No slots on this day.</p>';
+        return;
+      }
+      list.innerHTML = "";
+      for (const slot of avail.slots) {
+        const row = document.createElement("button");
+        row.className = `schedule-row ${slot.available ? "is-available" : ""}`;
+        row.disabled = !slot.available;
+        row.innerHTML = `
+          <span class="schedule-bar"></span>
+          <span class="schedule-time">${fmtTime(slot.start)}</span>
+          <span class="schedule-status">${slot.available ? "Open" : (REASON_LABEL[slot.reason] || "Unavailable")}</span>
+          ${slot.available ? '<span class="schedule-cta">Book</span>' : ""}
+        `;
+        row.onclick = () => book(slot);
+        list.appendChild(row);
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  let bookingInFlight = false;
+
+  async function book(slot) {
+    if (bookingInFlight) return; // ignore a double-click while a request is already out
+    bookingInFlight = true;
+    document.querySelectorAll(".schedule-row").forEach(el => el.disabled = true);
+    hideError();
+    try {
+      await api("/bookings/", {
+        method: "POST",
+        body: { facility_id: Number(facilityId), start_time: slot.start, end_time: slot.end },
+      });
+      alert(`Booked ${fmtTime(slot.start)}`);
+      await loadSlots();
+    } catch (err) {
+      if (err.status === 409) {
+        showError("That slot was just taken — pick another.");
+        await loadSlots();
+      } else {
+        showError(err.message);
+        document.querySelectorAll(".schedule-row.is-available").forEach(el => el.disabled = false);
+      }
+    } finally {
+      bookingInFlight = false;
+    }
+  }
+
+  dateInput.addEventListener("change", loadSlots);
+
+  (async () => {
+    try {
+      await loadFacility();
+      await loadSlots();
+    } catch (err) {
+      showError(err.message);
+    }
+  })();
+
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) loadSlots();
+  });
+</script>
+</body>
+</html>

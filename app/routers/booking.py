@@ -9,6 +9,14 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.BookingResponse)
 def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    # a datetime with no UTC offset (e.g. "2026-09-26T03:30:00") parses as
+    # naive; every stored/compared timestamp in this app is UTC, so treat a
+    # naive input as UTC rather than crashing on naive/aware comparison below.
+    if booking.start_time.tzinfo is None:
+        booking.start_time = booking.start_time.replace(tzinfo=timezone.utc)
+    if booking.end_time.tzinfo is None:
+        booking.end_time = booking.end_time.replace(tzinfo=timezone.utc)
+
     facility = db.query(models.Facility).filter(models.Facility.id == booking.facility_id).first()
     if not facility or not facility.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facility not found")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, date as date_type, timedelta
+from datetime import datetime, date as date_type, timedelta, timezone
 from .. import models, schemas
 from ..database import get_db
 
@@ -12,8 +12,8 @@ def get_availiblity(id: int, date:date_type, db: Session = Depends(get_db)):
     if not facility:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facility not found")
 
-    day_start= datetime.combine(date, facility.opens_at.time())
-    day_end = datetime.combine(date, facility.closes_at.time())
+    day_start= datetime.combine(date, facility.opens_at.time(), tzinfo=timezone.utc)
+    day_end = datetime.combine(date, facility.closes_at.time(), tzinfo=timezone.utc)
 
     bookings=db.query(models.Booking).filter(
         models.Booking.facility_id == id,
@@ -28,7 +28,7 @@ def get_availiblity(id: int, date:date_type, db: Session = Depends(get_db)):
         models.Closure.end_time > day_start,
     ).all()
 
-    now=datetime.now()
+    now=datetime.now(timezone.utc)
     max_date= now.date() + timedelta(days=facility.max_advance_days)
 
     slots= []
@@ -41,7 +41,7 @@ def get_availiblity(id: int, date:date_type, db: Session = Depends(get_db)):
         if any(b.start_time < slot_end and b.end_time > slot_start for b in bookings):
             available, reason = False, "booked"
         elif any(c.start_time < slot_end and c.end_time > slot_start for c in closures):
-            available, reason = False, "Closure"
+            available, reason = False, "closure"
         elif slot_start < now:
             available, reason = False, "past"
         elif date > max_date:

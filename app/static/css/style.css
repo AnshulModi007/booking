@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --navy: #0f1b2d;
+  --navy-2: #16263d;
+  --navy-3: #1f3350;
+  --line: #edeff2;
+  --chalk: #8da0bd;
+  --gold: #e8a93c;
+  --teal: #3fb68b;
+  --redcard: #e5533d;
+  --font: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--navy);
+  color: var(--line);
+  padding-bottom: 76px; /* room for bottom nav */
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 4px 0 20px;
+}
+h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--chalk);
+  margin: 28px 0 10px;
+}
+
+a { color: inherit; }
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ---- buttons: the only fully-rounded shape, reserved for tap targets ---- */
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #201404;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.btn:active { transform: scale(0.98); }
+.btn.secondary { background: var(--navy-3); color: var(--line); }
+.btn.danger { background: var(--redcard); color: #2a0a05; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---- forms ---- */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--chalk);
+}
+.field input, .field select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--navy-3);
+  background: var(--navy-2);
+  color: var(--line);
+}
+.field input:focus, .field select:focus { border-color: var(--gold); }
+
+.error {
+  background: rgba(229, 83, 61, 0.15);
+  border-left: 3px solid var(--redcard);
+  color: #f4b3a8;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+/* ---- scoreboard tabs (login) ---- */
+.tabs { display: flex; gap: 24px; margin-bottom: 20px; border-bottom: 1px solid var(--navy-3); }
+.tabs button {
+  padding: 0 0 10px;
+  border: none;
+  background: none;
+  color: var(--chalk);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-bottom: 2px solid transparent;
+}
+.tabs button.active { color: var(--line); border-bottom-color: var(--gold); }
+
+/* ---- facility plaques: flat, color bar by type, no shadow ---- */
+.card {
+  background: var(--navy-2);
+  border-radius: 4px;
+  border-left: 3px solid var(--chalk);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.card.type-court { border-left-color: var(--gold); }
+.card.type-room { border-left-color: var(--teal); }
+.card.type-equipment { border-left-color: var(--chalk); }
+
+.card-tap { display: block; text-decoration: none; color: inherit; }
+.card-title { font-weight: 600; font-size: 1.05rem; }
+.card-sub { color: var(--chalk); font-size: 0.85rem; margin-top: 3px; }
+.card-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--navy);
+  background: var(--chalk);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-top: 6px;
+}
+.card.type-court .card-tag { background: var(--gold); }
+.card.type-room .card-tag { background: var(--teal); }
+
+/* ---- schedule board: the slot picker, a vertical list not a button grid ---- */
+.schedule {
+  border-top: 1px solid var(--navy-3);
+}
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 4px;
+  border: none;
+  border-bottom: 1px solid var(--navy-3);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.schedule-row:disabled { cursor: not-allowed; }
+
+.schedule-time {
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 64px;
+}
+.schedule-status {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--chalk);
+}
+.schedule-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--navy-3); }
+.schedule-row.is-available .schedule-bar { background: var(--teal); }
+.schedule-row.is-available .schedule-status { color: var(--teal); }
+.schedule-row.is-available .schedule-time { color: var(--line); }
+.schedule-cta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+.schedule-row:disabled .schedule-time,
+.schedule-row:disabled .schedule-status { color: var(--chalk); opacity: 0.55; }
+
+/* ---- bottom nav: flat bar, gold sideline marks the active tab ---- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background: var(--navy-2);
+  border-top: 1px solid var(--navy-3);
+}
+.bottom-nav a, .bottom-nav button {
+  flex: 1;
+  padding: 14px 0 12px;
+  text-align: center;
+  color: var(--chalk);
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-top: 2px solid transparent;
+  font-size: 0.78rem;
+}
+.bottom-nav a.active { color: var(--line); border-top-color: var(--gold); font-weight: 600; }
+
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.muted { color: var(--chalk); font-size: 0.85rem; }
+.status-confirmed { color: var(--teal); }
+.status-cancelled { color: var(--redcard); }
+
+/* ---- chat ---- */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 90px;
+}
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--gold);
+  color: #201404;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background: var(--navy-2);
+  color: var(--line);
+  border-bottom-left-radius: 4px;
+}
+.chat-bubble.pending { align-self: flex-start; background: var(--navy-2); color: var(--chalk); font-style: italic; }
+
+.chat-input-bar {
+  position: fixed;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--navy);
+  border-top: 1px solid var(--navy-3);
+}
+.chat-input-bar input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--navy-3);
+  background: var(--navy-2);
+  color: var(--line);
+  padding-left: 16px;
+}
+.chat-input-bar button {
+  padding: 0 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #201404;
+  font-weight: 600;
+}

@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from datetime import date as data_type
+from typing import Literal
+
+FacilityType = Literal["court", "room", "equipment"]
 
 class Token(BaseModel):
     access_token: str
@@ -18,7 +21,6 @@ class UserCreate(BaseModel):
     password: str
     full_name: str
     roll_number: str
-    role: str
 
 class UserResponse(BaseModel):
     id: int
@@ -34,7 +36,7 @@ class UserResponse(BaseModel):
 
 class FacilityCreate(BaseModel):
     name: str
-    type: str
+    type: FacilityType
     location: str
     slot_duration_minutes: int
     opens_at: datetime
@@ -63,7 +65,7 @@ class FacilityResponse(BaseModel):
 
 class FacilityUpdate(BaseModel):
     name: str | None = None
-    type: str | None = None
+    type: FacilityType | None = None
     location: str | None = None
     slot_duration_minutes: int | None = None
     opens_at: datetime | None = None
